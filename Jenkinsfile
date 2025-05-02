@@ -1,27 +1,26 @@
-pipeline {
+pipeline{
+
     agent any
-    
-    environment {
-        // Make sure this matches exactly with the ID you created in Jenkins
-        DOCKER_HUB_CREDS = credentials('1')
-        // Update with your actual Docker Hub username and app name
-        DOCKER_IMAGE = "amir145/devops_tp3"
-    }
+
 
     tools {
         maven 'Maven'
     }
-    
-    stages {
-        stage('Checkout') {
+
+	environment {
+		DOCKERHUB_CREDENTIALS=credentials('1')
+	}
+
+	stages {
+	    
+	    stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        
+
         stage('Build Application') {
             steps {
-                // Use sh for Windows commands instead of sh
                 sh 'mvn clean package -DskipTests'
             }
         }
@@ -36,28 +35,36 @@ pipeline {
                 }
             }
         }
+
         
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:0 ."
-                    sh "docker tag ${DOCKER_IMAGE}:0 ${DOCKER_IMAGE}:latest"
+                    def imageName = "amir145/devops_tp3"
+                    sh "docker build -t ${imageName}:0 ."
+                    sh "docker tag ${imageName}:0 ${imageName}:latest"
                 }
             }
         }
-        
-        stage('Push to Docker Hub') {
+ 
+
+		stage('Login') {
+
+			steps {
+				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+			}
+		}
+
+        stage('Push') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh "docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%"
-                    sh "docker push ${DOCKER_IMAGE}:0"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
-                    sh "docker logout"
+                script {
+                    def imageName = "amir145/devops_tp3"
+                    sh "docker push ${imageName}:latest"
                 }
             }
         }
 
-         stage('Déployer sur Kubernetes') {
+        stage('Déployer sur Kubernetes') {
             steps {
                 script {
                     sh 'kubectl apply -f deployment.yaml'
@@ -66,12 +73,13 @@ pipeline {
             }
         }
         
-        stage('Cleanup') {
-            steps {
-                cleanWs()
-                sh "docker rmi ${DOCKER_IMAGE}:0 || exit 0"
-                sh "docker rmi ${DOCKER_IMAGE}:latest || exit 0"
-            }
-        }
-    }
+
+	}
+
+	post {
+		always {
+			sh 'docker logout'
+		}
+	}
+
 }
