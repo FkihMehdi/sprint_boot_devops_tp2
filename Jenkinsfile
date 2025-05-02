@@ -5,7 +5,7 @@ pipeline {
         // Make sure this matches exactly with the ID you created in Jenkins
         DOCKER_HUB_CREDS = credentials('1')
         // Update with your actual Docker Hub username and app name
-        DOCKER_IMAGE = "amir145/devops_TP3"
+        DOCKER_IMAGE = "amir145/devops_tp3"
     }
 
     tools {
@@ -21,14 +21,14 @@ pipeline {
         
         stage('Build Application') {
             steps {
-                // Use bat for Windows commands instead of sh
-                bat 'mvn clean package -DskipTests'
+                // Use sh for Windows commands instead of sh
+                sh 'mvn clean package -DskipTests'
             }
         }
         
         stage('Run Tests') {
             steps {
-                bat 'mvn test'
+                sh 'mvn test'
             }
             post {
                 always {
@@ -40,8 +40,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    bat "docker build -t ${DOCKER_IMAGE}:0 ."
-                    bat "docker tag ${DOCKER_IMAGE}:0 ${DOCKER_IMAGE}:latest"
+                    sh "docker build -t ${DOCKER_IMAGE}:0 ."
+                    sh "docker tag ${DOCKER_IMAGE}:0 ${DOCKER_IMAGE}:latest"
                 }
             }
         }
@@ -49,10 +49,10 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    bat "docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%"
-                    bat "docker push ${DOCKER_IMAGE}:0"
-                    bat "docker push ${DOCKER_IMAGE}:latest"
-                    bat "docker logout"
+                    sh "docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%"
+                    sh "docker push ${DOCKER_IMAGE}:0"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    sh "docker logout"
                 }
             }
         }
@@ -69,8 +69,8 @@ pipeline {
         stage('Cleanup') {
             steps {
                 cleanWs()
-                bat "docker rmi ${DOCKER_IMAGE}:0 || exit 0"
-                bat "docker rmi ${DOCKER_IMAGE}:latest || exit 0"
+                sh "docker rmi ${DOCKER_IMAGE}:0 || exit 0"
+                sh "docker rmi ${DOCKER_IMAGE}:latest || exit 0"
             }
         }
     }
