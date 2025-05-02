@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops_TP3-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops_TP3
+  template:
+    metadata:
+      labels:
+        app: devops_TP3
+    spec:
+      containers:
+        - name: devops_TP3
+          image: amir145/devops_TP3
+          ports:
+            - containerPort: 80

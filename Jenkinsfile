@@ -5,7 +5,7 @@ pipeline {
         // Make sure this matches exactly with the ID you created in Jenkins
         DOCKER_HUB_CREDS = credentials('1')
         // Update with your actual Docker Hub username and app name
-        DOCKER_IMAGE = "sahnounhoussem0501/devops_TP2"
+        DOCKER_IMAGE = "amir145/devops_TP3"
     }
 
     tools {
@@ -53,6 +53,15 @@ pipeline {
                     bat "docker push ${DOCKER_IMAGE}:0"
                     bat "docker push ${DOCKER_IMAGE}:latest"
                     bat "docker logout"
+                }
+            }
+        }
+
+         stage('Déployer sur Kubernetes') {
+            steps {
+                script {
+                    sh 'kubectl apply -f deployment.yaml'
+                    sh 'kubectl apply -f service.yaml'
                 }
             }
         }
