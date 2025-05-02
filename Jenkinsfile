@@ -1,19 +1,17 @@
-pipeline{
-
+pipeline {
     agent any
-
 
     tools {
         maven 'Maven'
     }
 
-	environment {
-		DOCKERHUB_CREDENTIALS=credentials('1')
-	}
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('2')
+    }
 
-	stages {
-	    
-	    stage('Checkout') {
+    stages {
+
+        stage('Checkout') {
             steps {
                 checkout scm
             }
@@ -24,7 +22,7 @@ pipeline{
                 sh 'mvn clean package -DskipTests'
             }
         }
-        
+
         stage('Run Tests') {
             steps {
                 sh 'mvn test'
@@ -36,7 +34,6 @@ pipeline{
             }
         }
 
-        
         stage('Build Docker Image') {
             steps {
                 script {
@@ -46,14 +43,12 @@ pipeline{
                 }
             }
         }
- 
 
-		stage('Login') {
-
-			steps {
-				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-			}
-		}
+        stage('Login') {
+            steps {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
 
         stage('Push') {
             steps {
@@ -64,22 +59,44 @@ pipeline{
             }
         }
 
+        stage('Install kubectl') {
+            steps {
+                sh '''
+                    curl -LO "https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl"
+                    chmod +x kubectl
+                    mkdir -p $HOME/bin
+                    mv kubectl $HOME/bin/
+                    export PATH=$HOME/bin:$PATH
+                '''
+            }
+        }
+
+        stage('Install Minikube') {
+            steps {
+                sh '''
+                    curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+                    chmod +x minikube
+                    mkdir -p $HOME/bin
+                    mv minikube $HOME/bin/
+                    export PATH=$HOME/bin:$PATH
+                '''
+            }
+        }
+
         stage('Déployer sur Kubernetes') {
             steps {
                 script {
-                    sh 'kubectl apply -f deployment.yaml'
-                    sh 'kubectl apply -f service.yaml'
+                    sh 'minikube start'
+                    sh 'minikube kubectl apply -f deployment.yaml'
+                    sh 'minikube kubectl apply -f service.yaml'
                 }
             }
         }
-        
+    }
 
-	}
-
-	post {
-		always {
-			sh 'docker logout'
-		}
-	}
-
+    post {
+        always {
+            sh 'docker logout'
+        }
+    }
 }
